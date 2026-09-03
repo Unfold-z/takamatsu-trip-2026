@@ -117,6 +117,10 @@ function render(){
   const done=day.items.filter(x=>["confirmed","booked"].includes(x.status)).length;
   $("progressText").textContent=`${done} / ${day.items.length}`;
   $("progressBar").style.width=`${day.items.length?done/day.items.length*100:0}%`;
+  $("countAll").textContent=day.items.length;
+  $("countPending").textContent=day.items.filter(x=>x.status==="pending").length;
+  $("countConfirmed").textContent=day.items.filter(x=>x.status==="confirmed").length;
+  $("countBooked").textContent=day.items.filter(x=>x.status==="booked").length;
   $("privacyToggle").checked=!!state.showPrivate;
   $("editorButton").textContent=isEditor?"✓ 編輯中":"🔒 編輯";
   $("editorButton").classList.toggle("active",isEditor);
