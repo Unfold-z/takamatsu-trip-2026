@@ -9,6 +9,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&family=Shippori+Mincho:wght@600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
@@ -59,6 +60,21 @@
         <div class="progress-track"><span id="progressBar"></span></div>
       </section>
 
+      <section class="route-map-section" aria-labelledby="routeMapTitle">
+        <div class="map-heading">
+          <div><p>ROUTE MAP</p><h2 id="routeMapTitle">行程路線圖</h2><span id="mapSummary">依行程順序顯示</span></div>
+          <div class="map-actions">
+            <div class="map-toggle" aria-label="地圖顯示範圍">
+              <button class="active" data-map-mode="day">這一天</button>
+              <button data-map-mode="all">六天總覽</button>
+            </div>
+            <a class="map-route-button" id="dayRouteButton" target="_blank" rel="noopener">↗ 整日導航</a>
+          </div>
+        </div>
+        <div class="route-map" id="routeMap" aria-label="行程地圖"></div>
+        <p class="map-note">標記依行程順序編號；連線為路線概覽，實際道路與時間請以導航為準。</p>
+      </section>
+
       <section class="timeline" id="timeline" aria-live="polite"></section>
 
       <section class="choices-section" id="choicesSection">
@@ -107,6 +123,7 @@
     </dialog>
 
     <div class="toast" id="toast" role="status"></div>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script type="module" src="app.js"></script>
   </body>
 </html>
