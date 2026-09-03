@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#f4efe6" />
+    <meta name="description" content="2026 高松、高知六天五夜雙人旅行行程板" />
+    <title>瀨戶內六日手帖｜高松・高知</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&family=Shippori+Mincho:wght@600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="#top" aria-label="回到行程首頁">
+        <span class="brand-mark">瀨</span>
+        <span><strong>瀨戶內六日手帖</strong><small>TAKAMATSU · KOCHI · NARUTO</small></span>
+      </a>
+      <div class="header-actions">
+        <button class="editor-button" id="editorButton">🔒 編輯</button>
+        <button class="icon-button" id="settingsButton" aria-label="資料與設定" title="資料與設定">•••</button>
+      </div>
+    </header>
+
+    <main id="top">
+      <section class="trip-intro">
+        <div>
+          <p class="eyebrow">2026.09.09 — 09.14</p>
+          <h1>兩個人的<br /><em>四國慢旅</em></h1>
+          <p class="intro-copy">沿著仁淀藍、鳴門潮與瀨戶內夕陽，收藏六天剛剛好的風景。</p>
+        </div>
+        <div class="trip-stamp" aria-hidden="true"><span>6 DAYS</span><strong>四國</strong><small>旅の記録</small></div>
+      </section>
+
+      <nav class="day-tabs" id="dayTabs" aria-label="選擇日期"></nav>
+
+      <section class="day-heading" id="dayHeading">
+        <div><p id="dayMeta"></p><h2 id="dayTitle"></h2></div>
+        <div class="day-actions">
+          <button class="secondary-button" id="todayButton">今天</button>
+          <button class="primary-button" id="addButton">＋ 新增行程</button>
+        </div>
+      </section>
+
+      <section class="progress-card" aria-label="今日確認進度">
+        <div><span>今日確認進度</span><strong id="progressText">0 / 0</strong></div>
+        <div class="progress-track"><span id="progressBar"></span></div>
+      </section>
+
+      <section class="timeline" id="timeline" aria-live="polite"></section>
+
+      <section class="choices-section" id="choicesSection">
+        <div class="section-title"><div><p>POCKET LIST</p><h2>候選口袋</h2></div><button class="text-button" id="addChoiceButton">＋ 加入候選</button></div>
+        <div class="choice-grid" id="choiceGrid"></div>
+      </section>
+    </main>
+
+    <footer><span>高松 · 高知 · 鳴門</span><p>資料只儲存在目前裝置，可用設定中的匯出／匯入同步。</p></footer>
+
+    <dialog id="editDialog">
+      <form method="dialog" id="editForm">
+        <div class="dialog-head"><div><p>EDIT PLAN</p><h2 id="dialogTitle">編輯行程</h2></div><button class="close-button" value="cancel" aria-label="關閉">×</button></div>
+        <input type="hidden" id="editId" />
+        <input type="hidden" id="editKind" />
+        <label>時間<input id="editTime" placeholder="例如 15:30 或 午餐" /></label>
+        <label>名稱<input id="editName" required placeholder="景點、餐廳或住宿名稱" /></label>
+        <label>分類<select id="editType"><option>景點</option><option>餐廳</option><option>住宿</option><option>交通</option><option>購物</option><option>備案</option></select></label>
+        <label>Google Maps 連結<input id="editMap" type="url" placeholder="https://maps.app.goo.gl/..." /></label>
+        <label>移動／停留時間<input id="editTravel" placeholder="例如 車程約 45 分鐘" /></label>
+        <label>狀態<select id="editStatus"><option value="pending">待討論</option><option value="confirmed">已確認</option><option value="booked">已預約</option><option value="backup">備案</option></select></label>
+        <label class="full">備註<textarea id="editNote" rows="4" placeholder="門票、訂位或想吃的東西"></textarea></label>
+        <div class="dialog-actions"><button type="button" class="danger-button" id="deleteButton">刪除</button><span></span><button value="cancel" class="secondary-button">取消</button><button type="submit" class="primary-button">儲存</button></div>
+      </form>
+    </dialog>
+
+    <dialog id="settingsDialog">
+      <div class="dialog-head"><div><p>DATA & PRIVACY</p><h2>資料與設定</h2></div><button class="close-button" id="closeSettings" aria-label="關閉">×</button></div>
+      <div class="settings-list">
+        <label class="toggle-row"><span><strong>顯示訂位資料</strong><small>預設隱藏姓名與預訂編號</small></span><input type="checkbox" id="privacyToggle" /></label>
+        <button class="setting-action" id="exportButton"><span><strong>匯出行程</strong><small>下載 JSON 備份，也能傳給另一支手機</small></span><b>↓</b></button>
+        <label class="setting-action file-action"><span><strong>匯入行程</strong><small>選擇另一台裝置匯出的 JSON</small></span><b>↑</b><input type="file" id="importInput" accept="application/json" /></label>
+        <button class="setting-action danger-row" id="resetButton"><span><strong>還原原始行程</strong><small>清除這台裝置上的所有修改</small></span><b>↺</b></button>
+      </div>
+      <p class="storage-note">行程會即時同步；只有輸入共用密碼後才能修改。</p>
+    </dialog>
+
+    <dialog id="loginDialog" class="login-dialog">
+      <form method="dialog" id="loginForm">
+        <div class="dialog-head"><div><p>EDITOR ACCESS</p><h2>輸入編輯密碼</h2></div><button class="close-button" value="cancel" aria-label="關閉">×</button></div>
+        <p class="login-copy">所有人都能瀏覽，只有知道共用密碼的人可以修改行程。</p>
+        <label>共用密碼<input id="passwordInput" type="password" required autocomplete="current-password" placeholder="輸入旅行編輯密碼" /></label>
+        <p class="login-error" id="loginError"></p>
+        <div class="login-actions"><button value="cancel" class="secondary-button">取消</button><button type="submit" class="primary-button" id="loginSubmit">進入編輯模式</button></div>
+      </form>
+    </dialog>
+
+    <div class="toast" id="toast" role="status"></div>
+    <script type="module" src="app.js"></script>
+  </body>
+</html>
