@@ -19,6 +19,7 @@
         <span><strong>瀨戶內六日手帖</strong><small>TAKAMATSU · KOCHI · NARUTO</small></span>
       </a>
       <div class="header-actions">
+        <a class="header-map-link" href="map.html">地圖</a>
         <button class="editor-button" id="editorButton">🔒 編輯</button>
         <button class="icon-button" id="settingsButton" aria-label="資料與設定" title="資料與設定">•••</button>
       </div>
@@ -45,19 +46,6 @@
           <button class="secondary-button" id="todayButton">今天</button>
           <button class="primary-button" id="addButton">＋ 新增行程</button>
         </div>
-      </section>
-
-      <div class="filter-row" id="filterRow" aria-label="篩選行程">
-        <span class="filter-label">顯示</span>
-        <button class="filter-chip active" data-filter="all"><i></i><span>全部</span><b id="countAll">0</b></button>
-        <button class="filter-chip" data-filter="pending"><i></i><span>待討論</span><b id="countPending">0</b></button>
-        <button class="filter-chip" data-filter="confirmed"><i></i><span>已確認</span><b id="countConfirmed">0</b></button>
-        <button class="filter-chip" data-filter="booked"><i></i><span>已預約</span><b id="countBooked">0</b></button>
-      </div>
-
-      <section class="progress-card" aria-label="今日確認進度">
-        <div><span>今日確認進度</span><strong id="progressText">0 / 0</strong></div>
-        <div class="progress-track"><span id="progressBar"></span></div>
       </section>
 
       <section class="route-map-section" aria-labelledby="routeMapTitle">
@@ -95,7 +83,7 @@
         <label>分類<select id="editType"><option>景點</option><option>餐廳</option><option>住宿</option><option>交通</option><option>購物</option><option>備案</option></select></label>
         <label>Google Maps 連結<input id="editMap" type="url" placeholder="https://maps.app.goo.gl/..." /></label>
         <label>移動／停留時間<input id="editTravel" placeholder="例如 車程約 45 分鐘" /></label>
-        <label>狀態<select id="editStatus"><option value="pending">待討論</option><option value="confirmed">已確認</option><option value="booked">已預約</option><option value="backup">備案</option></select></label>
+        <input type="hidden" id="editStatus" value="pending" />
         <label class="full">備註<textarea id="editNote" rows="4" placeholder="門票、訂位或想吃的東西"></textarea></label>
         <div class="dialog-actions"><button type="button" class="danger-button" id="deleteButton">刪除</button><span></span><button value="cancel" class="secondary-button">取消</button><button type="submit" class="primary-button">儲存</button></div>
       </form>
