@@ -84,6 +84,8 @@ let preferences={selectedDay:0,showPrivate:false};
 try { preferences={...preferences,...JSON.parse(localStorage.getItem(STORAGE_KEY))}; } catch {}
 let state={...clone(seed),...preferences};
 let isEditor=false;
+let currentFilter="all";
+const collapsedCards=new Set();
 
 const $ = (id) => document.getElementById(id);
 const statusLabel = {pending:"待討論",confirmed:"已確認",booked:"已預約",backup:"備案"};
@@ -109,7 +111,8 @@ function render(){
   $("dayTabs").innerHTML=state.days.map((d,i)=>`<button class="day-tab ${i===state.selectedDay?"active":""}" data-day="${i}"><span>DAY ${i+1}</span><strong>${d.date.slice(5).replace("-","/")} ${d.weekday}</strong></button>`).join("");
   $("dayMeta").textContent=`DAY ${state.selectedDay+1} · ${day.date.replaceAll("-",".")} · ${day.weekday}`;
   $("dayTitle").textContent=day.title;
-  $("timeline").innerHTML=day.items.length?day.items.map(itemCard).join(""):`<div class="empty">這一天還沒有行程，按「新增行程」開始安排。</div>`;
+  const visibleItems=currentFilter==="all"?day.items:day.items.filter(x=>x.status===currentFilter||(currentFilter==="confirmed"&&x.status==="booked"));
+  $("timeline").innerHTML=visibleItems.length?visibleItems.map(itemCard).join(""):`<div class="empty">這個篩選條件下沒有行程。</div>`;
   $("choiceGrid").innerHTML=day.choices.length?day.choices.map(choiceCard).join(""):`<div class="empty">尚無候選地點</div>`;
   const done=day.items.filter(x=>["confirmed","booked"].includes(x.status)).length;
   $("progressText").textContent=`${done} / ${day.items.length}`;
@@ -126,7 +129,7 @@ function itemCard(x){
   const travel=x.travel?`<p class="travel-line">→ ${safe(x.travel)}</p>`:"";
   const map=x.map?`<a class="map-button" href="${safe(x.map)}" target="_blank" rel="noopener">↗ 開啟導航</a>`:"";
   const checked=["confirmed","booked"].includes(x.status);
-  return `<article class="timeline-item"><time class="timeline-time">${safe(x.time)}</time><span class="timeline-dot"></span><div class="timeline-card"><div class="card-top"><div><div class="type-line"><span class="type-badge">${safe(x.type)}</span><span class="status-badge ${x.status}">${statusLabel[x.status]||"待討論"}</span></div><h3>${safe(x.name)}</h3></div><button class="card-menu edit-item" data-id="${x.id}" aria-label="編輯 ${safe(x.name)}">•••</button></div>${travel}${note}${privacy}<div class="card-actions">${map}<button class="confirm-button ${checked?"checked":""}" data-confirm="${x.id}">${checked?"✓ 已確認":"○ 標為確認"}</button></div></div></article>`;
+  return `<article class="timeline-item"><time class="timeline-time">${safe(x.time)}</time><span class="timeline-dot"></span><div class="timeline-card ${collapsedCards.has(x.id)?"collapsed":""}" data-card="${x.id}"><div class="card-top"><div><div class="type-line"><span class="type-badge">${safe(x.type)}</span><span class="status-badge ${x.status}">${statusLabel[x.status]||"待討論"}</span></div><h3>${safe(x.name)}</h3></div><button class="card-menu edit-item" data-id="${x.id}" aria-label="編輯 ${safe(x.name)}">•••</button></div>${travel}${note}${privacy}<div class="card-actions">${map}<button class="confirm-button ${checked?"checked":""}" data-confirm="${x.id}">${checked?"✓ 已確認":"○ 標為確認"}</button></div></div></article>`;
 }
 
 function choiceCard(x){ return `<article class="choice-card"><span class="type-badge">${safe(x.type)}</span><h3>${safe(x.name)}</h3><p>${safe(x.note||"")}</p><div class="choice-actions">${x.map?`<a class="map-button" href="${safe(x.map)}" target="_blank" rel="noopener">↗ 地圖</a>`:""}<button class="confirm-button edit-choice" data-id="${x.id}">編輯</button></div></article>`; }
@@ -136,6 +139,7 @@ function bindDynamic(){
   document.querySelectorAll(".edit-item").forEach(b=>b.onclick=()=>requireEditor(()=>openEditor("item",b.dataset.id)));
   document.querySelectorAll(".edit-choice").forEach(b=>b.onclick=()=>requireEditor(()=>openEditor("choice",b.dataset.id)));
   document.querySelectorAll("[data-confirm]").forEach(b=>b.onclick=()=>requireEditor(()=>{const x=currentDay().items.find(i=>i.id===b.dataset.confirm);x.status=["confirmed","booked"].includes(x.status)?"pending":"confirmed";save("狀態已更新");render();}));
+  document.querySelectorAll("[data-card]").forEach(card=>card.onclick=e=>{if(e.target.closest("button,a"))return;const id=card.dataset.card;collapsedCards.has(id)?collapsedCards.delete(id):collapsedCards.add(id);card.classList.toggle("collapsed");});
 }
 
 const currentDay=()=>state.days[state.selectedDay];
@@ -149,13 +153,17 @@ function openEditor(kind,id){
 $("editForm").onsubmit=(e)=>{e.preventDefault();const kind=$("editKind").value;const list=kind==="choice"?currentDay().choices:currentDay().items;const id=$("editId").value||`${kind}-${Date.now()}`;const old=list.find(x=>x.id===id)||{};const value={...old,id,time:$("editTime").value.trim(),name:$("editName").value.trim(),type:$("editType").value,map:$("editMap").value.trim(),travel:$("editTravel").value.trim(),status:kind==="choice"?"backup":$("editStatus").value,note:$("editNote").value.trim()};const at=list.findIndex(x=>x.id===id);if(at>=0)list[at]=value;else list.push(value);save("行程已儲存");$("editDialog").close();render();};
 $("deleteButton").onclick=()=>{const kind=$("editKind").value,id=$("editId").value;if(!id)return;const key=kind==="choice"?"choices":"items";currentDay()[key]=currentDay()[key].filter(x=>x.id!==id);save("項目已刪除");$("editDialog").close();render();};
 $("addButton").onclick=()=>requireEditor(()=>openEditor("item")); $("addChoiceButton").onclick=()=>requireEditor(()=>openEditor("choice"));
-$("settingsButton").onclick=()=>$("settingsDialog").showModal(); $("closeSettings").onclick=()=>$("settingsDialog").close();
+$("settingsButton").onclick=()=>$("settingsDialog").showModal();
 $("privacyToggle").onchange=(e)=>{state.showPrivate=e.target.checked;savePreferences();render();};
 $("todayButton").onclick=()=>{const local=new Date().toLocaleDateString("en-CA");const found=state.days.findIndex(d=>d.date===local);state.selectedDay=found>=0?found:0;savePreferences();render();toast(found>=0?"已切換到今天":"旅程尚未開始，先顯示 Day 1");};
 $("exportButton").onclick=()=>{const blob=new Blob([JSON.stringify(state,null,2)],{type:"application/json"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=`setouchi-trip-${new Date().toISOString().slice(0,10)}.json`;a.click();URL.revokeObjectURL(a.href);toast("備份已下載");};
 $("importInput").onchange=async(e)=>{if(!isEditor){e.target.value="";$("settingsDialog").close();requireEditor(()=>{});return;}try{const data=JSON.parse(await e.target.files[0].text());if(!Array.isArray(data.days)||data.days.length!==6)throw new Error();state={...state,days:data.days};await save("行程已匯入");$("settingsDialog").close();render();}catch{toast("檔案格式不正確");}e.target.value="";};
 $("resetButton").onclick=()=>requireEditor(()=>{if(confirm("確定要清除所有人的修改，還原最初行程嗎？")){state={...state,days:clone(seed.days)};save("已還原原始行程");$("settingsDialog").close();render();}});
 $("editorButton").onclick=()=>isEditor?logoutEditor():requireEditor(()=>{});
+$("prevDayButton").onclick=()=>{state.selectedDay=(state.selectedDay+state.days.length-1)%state.days.length;savePreferences();render();};
+$("nextDayButton").onclick=()=>{state.selectedDay=(state.selectedDay+1)%state.days.length;savePreferences();render();};
+document.querySelectorAll("[data-filter]").forEach(button=>button.onclick=()=>{currentFilter=button.dataset.filter;document.querySelectorAll("[data-filter]").forEach(x=>x.classList.toggle("active",x===button));render();});
+document.querySelectorAll(".dialog-close").forEach(button=>button.onclick=()=>button.closest("dialog").close());
 $("loginForm").onsubmit=async(e)=>{e.preventDefault();$("loginSubmit").disabled=true;$("loginError").textContent="";try{await loginEditor($("passwordInput").value);$("loginDialog").close();toast("已進入編輯模式");}catch{$("loginError").textContent="密碼不正確，請再試一次。";}finally{$("loginSubmit").disabled=false;}};
 
 watchEditor(active=>{isEditor=active;render();});
