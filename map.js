@@ -11,6 +11,8 @@ const DAYS=[
 const COLORS=["#e96743","#1d7f8c","#4b8164","#735f9b","#d39b38","#456b8a"];
 let selected=-1;
 let cloudDays=null;
+let drawToken=0;
+const routeCache=new Map();
 const map=L.map("fullRouteMap",{zoomControl:true}).setView([34.05,133.85],8);
 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'}).addTo(map);
 const layer=L.layerGroup().addTo(map);
@@ -20,15 +22,31 @@ strip.innerHTML=`<button class="active" data-day="-1">六天總覽</button>`+DAY
 function pointsFor(i){
   return DAYS[i].points.map(p=>{const live=cloudDays?.[i]?.items?.find(x=>x.id===p[0]);return {...p,id:p[0],time:live?.time||p[1],name:live?.name||p[2],lat:p[3],lng:p[4],link:live?.map||""};});
 }
-function draw(){
+async function roadGeometry(pts){
+  const key=pts.map(p=>`${p.lng},${p.lat}`).join(";");
+  if(routeCache.has(key))return routeCache.get(key);
+  try{
+    const response=await fetch(`https://router.project-osrm.org/route/v1/driving/${key}?overview=full&geometries=geojson`);
+    if(!response.ok)throw new Error();
+    const data=await response.json();
+    const geometry=data.routes?.[0]?.geometry;
+    if(!geometry)throw new Error();
+    routeCache.set(key,geometry);
+    return geometry;
+  }catch{return null;}
+}
+async function draw(){
+  const token=++drawToken;
   layer.clearLayers();
   const shown=selected<0?DAYS.map((_,i)=>i):[selected];
   const bounds=[];
-  shown.forEach(day=>{
+  for(const day of shown){
     const pts=pointsFor(day); const color=COLORS[day];
-    L.polyline(pts.map(p=>[p.lat,p.lng]),{color,weight:selected<0?4:5,opacity:.78,dashArray:selected<0?"8 7":null}).addTo(layer);
+    const geometry=await roadGeometry(pts);
+    if(token!==drawToken)return;
+    if(geometry)L.geoJSON(geometry,{style:{color,weight:selected<0?4:5,opacity:.8}}).addTo(layer);
     pts.forEach((p,i)=>{bounds.push([p.lat,p.lng]);const label=selected<0?`${day+1}-${i+1}`:`${i+1}`;const icon=L.divIcon({className:"route-marker-wrap",html:`<span class="route-marker" style="--marker-color:${color}">${label}</span>`,iconSize:[34,34],iconAnchor:[17,17]});L.marker([p.lat,p.lng],{icon}).bindPopup(`<div class="map-popup"><small>DAY ${day+1} · ${p.time}</small><strong>${p.name}</strong>${p.link?`<a href="${p.link}" target="_blank">開啟導航 ↗</a>`:""}</div>`).addTo(layer);});
-  });
+  }
   if(bounds.length)map.fitBounds(bounds,{padding:[45,45],maxZoom:selected<0?9:12});
   const listDays=selected<0?shown:[selected];
   document.getElementById("sheetMeta").textContent=selected<0?"6 DAYS · ROUTE OVERVIEW":`DAY ${selected+1}`;
