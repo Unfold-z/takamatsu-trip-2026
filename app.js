@@ -84,7 +84,6 @@ let preferences={selectedDay:0,showPrivate:false};
 try { preferences={...preferences,...JSON.parse(localStorage.getItem(STORAGE_KEY))}; } catch {}
 let state={...clone(seed),...preferences};
 let isEditor=false;
-let currentFilter="all";
 const collapsedCards=new Set();
 let mapMode="day";
 let routeMap;
@@ -124,16 +123,9 @@ function render(){
   $("dayTabs").innerHTML=state.days.map((d,i)=>`<button class="day-tab ${i===state.selectedDay?"active":""}" data-day="${i}"><span>DAY ${i+1}</span><strong>${d.date.slice(5).replace("-","/")} ${d.weekday}</strong></button>`).join("");
   $("dayMeta").textContent=`DAY ${state.selectedDay+1} · ${day.date.replaceAll("-",".")} · ${day.weekday}`;
   $("dayTitle").textContent=day.title;
-  const visibleItems=currentFilter==="all"?day.items:day.items.filter(x=>x.status===currentFilter||(currentFilter==="confirmed"&&x.status==="booked"));
+  const visibleItems=day.items;
   $("timeline").innerHTML=visibleItems.length?visibleItems.map(itemCard).join(""):`<div class="empty">這個篩選條件下沒有行程。</div>`;
   $("choiceGrid").innerHTML=day.choices.length?day.choices.map(choiceCard).join(""):`<div class="empty">尚無候選地點</div>`;
-  const done=day.items.filter(x=>["confirmed","booked"].includes(x.status)).length;
-  $("progressText").textContent=`${done} / ${day.items.length}`;
-  $("progressBar").style.width=`${day.items.length?done/day.items.length*100:0}%`;
-  $("countAll").textContent=day.items.length;
-  $("countPending").textContent=day.items.filter(x=>x.status==="pending").length;
-  $("countConfirmed").textContent=day.items.filter(x=>x.status==="confirmed").length;
-  $("countBooked").textContent=day.items.filter(x=>x.status==="booked").length;
   $("privacyToggle").checked=!!state.showPrivate;
   $("editorButton").textContent=isEditor?"✓ 編輯中":"🔒 編輯";
   $("editorButton").classList.toggle("active",isEditor);
@@ -194,8 +186,8 @@ function itemCard(x){
   const privacy=x.private&&state.showPrivate?`<p class="private-note">🔒 ${safe(x.private)}</p>`:"";
   const travel=x.travel?`<p class="travel-line">→ ${safe(x.travel)}</p>`:"";
   const map=x.map?`<a class="map-button" href="${safe(x.map)}" target="_blank" rel="noopener">↗ 開啟導航</a>`:"";
-  const checked=["confirmed","booked"].includes(x.status);
-  return `<article class="timeline-item"><time class="timeline-time">${safe(x.time)}</time><span class="timeline-dot"></span><div class="timeline-card ${collapsedCards.has(x.id)?"collapsed":""}" data-card="${x.id}"><div class="card-top"><div><div class="type-line"><span class="type-badge">${safe(x.type)}</span><span class="status-badge ${x.status}">${statusLabel[x.status]||"待討論"}</span></div><h3>${safe(x.name)}</h3></div><button class="card-menu edit-item" data-id="${x.id}" aria-label="編輯 ${safe(x.name)}">•••</button></div>${travel}${note}${privacy}<div class="card-actions">${map}<button class="confirm-button ${checked?"checked":""}" data-confirm="${x.id}">${checked?"✓ 已確認":"○ 標為確認"}</button></div></div></article>`;
+  const booked=x.status==="booked"?`<span class="status-badge booked">已預約</span>`:"";
+  return `<article class="timeline-item"><time class="timeline-time">${safe(x.time)}</time><span class="timeline-dot"></span><div class="timeline-card ${collapsedCards.has(x.id)?"collapsed":""}" data-card="${x.id}"><div class="card-top"><div><div class="type-line"><span class="type-badge">${safe(x.type)}</span>${booked}</div><h3>${safe(x.name)}</h3></div><button class="card-menu edit-item" data-id="${x.id}" aria-label="編輯 ${safe(x.name)}">•••</button></div>${travel}${note}${privacy}<div class="card-actions">${map}</div></div></article>`;
 }
 
 function choiceCard(x){ return `<article class="choice-card"><span class="type-badge">${safe(x.type)}</span><h3>${safe(x.name)}</h3><p>${safe(x.note||"")}</p><div class="choice-actions">${x.map?`<a class="map-button" href="${safe(x.map)}" target="_blank" rel="noopener">↗ 地圖</a>`:""}<button class="confirm-button edit-choice" data-id="${x.id}">編輯</button></div></article>`; }
@@ -204,7 +196,6 @@ function bindDynamic(){
   document.querySelectorAll("[data-day]").forEach(b=>b.onclick=()=>{state.selectedDay=Number(b.dataset.day);savePreferences();render();window.scrollTo({top:300,behavior:"smooth"});});
   document.querySelectorAll(".edit-item").forEach(b=>b.onclick=()=>requireEditor(()=>openEditor("item",b.dataset.id)));
   document.querySelectorAll(".edit-choice").forEach(b=>b.onclick=()=>requireEditor(()=>openEditor("choice",b.dataset.id)));
-  document.querySelectorAll("[data-confirm]").forEach(b=>b.onclick=()=>requireEditor(()=>{const x=currentDay().items.find(i=>i.id===b.dataset.confirm);x.status=["confirmed","booked"].includes(x.status)?"pending":"confirmed";save("狀態已更新");render();}));
   document.querySelectorAll("[data-card]").forEach(card=>card.onclick=e=>{if(e.target.closest("button,a"))return;const id=card.dataset.card;collapsedCards.has(id)?collapsedCards.delete(id):collapsedCards.add(id);card.classList.toggle("collapsed");});
 }
 
@@ -213,7 +204,7 @@ function openEditor(kind,id){
   const list=kind==="choice"?currentDay().choices:currentDay().items;
   const item=id?list.find(x=>x.id===id):{id:"",time:"",name:"",type:kind==="choice"?"備案":"景點",map:"",travel:"",status:kind==="choice"?"backup":"pending",note:""};
   $("editId").value=item.id; $("editKind").value=kind; $("editTime").value=item.time||""; $("editName").value=item.name||""; $("editType").value=item.type||"景點"; $("editMap").value=item.map||""; $("editTravel").value=item.travel||""; $("editStatus").value=item.status||"pending"; $("editNote").value=item.note||"";
-  $("dialogTitle").textContent=id?"編輯行程":"新增行程"; $("deleteButton").style.visibility=id?"visible":"hidden"; $("editTime").parentElement.style.display=kind==="choice"?"none":"block"; $("editTravel").parentElement.style.display=kind==="choice"?"none":"block"; $("editStatus").parentElement.style.display=kind==="choice"?"none":"block"; $("editDialog").showModal();
+  $("dialogTitle").textContent=id?"編輯行程":"新增行程"; $("deleteButton").style.visibility=id?"visible":"hidden"; $("editTime").parentElement.style.display=kind==="choice"?"none":"block"; $("editTravel").parentElement.style.display=kind==="choice"?"none":"block"; $("editDialog").showModal();
 }
 
 $("editForm").onsubmit=(e)=>{e.preventDefault();const kind=$("editKind").value;const list=kind==="choice"?currentDay().choices:currentDay().items;const id=$("editId").value||`${kind}-${Date.now()}`;const old=list.find(x=>x.id===id)||{};const value={...old,id,time:$("editTime").value.trim(),name:$("editName").value.trim(),type:$("editType").value,map:$("editMap").value.trim(),travel:$("editTravel").value.trim(),status:kind==="choice"?"backup":$("editStatus").value,note:$("editNote").value.trim()};const at=list.findIndex(x=>x.id===id);if(at>=0)list[at]=value;else list.push(value);save("行程已儲存");$("editDialog").close();render();};
@@ -228,7 +219,6 @@ $("resetButton").onclick=()=>requireEditor(()=>{if(confirm("確定要清除所�
 $("editorButton").onclick=()=>isEditor?logoutEditor():requireEditor(()=>{});
 $("prevDayButton").onclick=()=>{state.selectedDay=(state.selectedDay+state.days.length-1)%state.days.length;savePreferences();render();};
 $("nextDayButton").onclick=()=>{state.selectedDay=(state.selectedDay+1)%state.days.length;savePreferences();render();};
-document.querySelectorAll("[data-filter]").forEach(button=>button.onclick=()=>{currentFilter=button.dataset.filter;document.querySelectorAll("[data-filter]").forEach(x=>x.classList.toggle("active",x===button));render();});
 document.querySelectorAll("[data-map-mode]").forEach(button=>button.onclick=()=>{mapMode=button.dataset.mapMode;renderRouteMap();});
 document.querySelectorAll(".dialog-close").forEach(button=>button.onclick=()=>button.closest("dialog").close());
 $("loginForm").onsubmit=async(e)=>{e.preventDefault();$("loginSubmit").disabled=true;$("loginError").textContent="";try{await loginEditor($("passwordInput").value);$("loginDialog").close();toast("已進入編輯模式");}catch{$("loginError").textContent="密碼不正確，請再試一次。";}finally{$("loginSubmit").disabled=false;}};
