@@ -25,12 +25,13 @@
 
     <main id="top">
       <section class="trip-intro">
-        <div>
+        <div class="hero-copy">
           <p class="eyebrow">2026.09.09 — 09.14</p>
-          <h1>兩個人的<br /><em>四國慢旅</em></h1>
-          <p class="intro-copy">沿著仁淀藍、鳴門潮與瀨戶內夕陽，收藏六天剛剛好的風景。</p>
+          <h1><span>高松・高知</span><em>六日行程</em></h1>
+          <p class="intro-copy">每天的路線、餐廳候選與導航，都放在同一個地方。</p>
+          <div class="trip-facts"><span>6 天 5 夜</span><span>自駕旅行</span><span>2 人行程</span></div>
         </div>
-        <div class="trip-stamp" aria-hidden="true"><span>6 DAYS</span><strong>四國</strong><small>旅の記録</small></div>
+        <div class="route-art" aria-hidden="true"><span class="route-dot dot-a"></span><span class="route-dot dot-b"></span><span class="route-dot dot-c"></span><strong>TAKAMATSU</strong><i></i><strong>KOCHI</strong><i></i><strong>NARUTO</strong></div>
       </section>
 
       <nav class="day-tabs" id="dayTabs" aria-label="選擇日期"></nav>
@@ -38,10 +39,19 @@
       <section class="day-heading" id="dayHeading">
         <div><p id="dayMeta"></p><h2 id="dayTitle"></h2></div>
         <div class="day-actions">
+          <button class="secondary-button" id="prevDayButton" aria-label="前一天">←</button>
+          <button class="secondary-button" id="nextDayButton" aria-label="後一天">→</button>
           <button class="secondary-button" id="todayButton">今天</button>
           <button class="primary-button" id="addButton">＋ 新增行程</button>
         </div>
       </section>
+
+      <div class="filter-row" id="filterRow" aria-label="篩選行程">
+        <button class="filter-chip active" data-filter="all">全部</button>
+        <button class="filter-chip" data-filter="pending">待討論</button>
+        <button class="filter-chip" data-filter="confirmed">已確認</button>
+        <button class="filter-chip" data-filter="booked">已預約</button>
+      </div>
 
       <section class="progress-card" aria-label="今日確認進度">
         <div><span>今日確認進度</span><strong id="progressText">0 / 0</strong></div>
@@ -56,11 +66,11 @@
       </section>
     </main>
 
-    <footer><span>高松 · 高知 · 鳴門</span><p>資料只儲存在目前裝置，可用設定中的匯出／匯入同步。</p></footer>
+    <footer><span>高松 · 高知 · 鳴門</span><p>行程透過 Firebase 即時同步；公開瀏覽，密碼解鎖編輯。</p></footer>
 
     <dialog id="editDialog">
       <form method="dialog" id="editForm">
-        <div class="dialog-head"><div><p>EDIT PLAN</p><h2 id="dialogTitle">編輯行程</h2></div><button class="close-button" value="cancel" aria-label="關閉">×</button></div>
+        <div class="dialog-head"><div><p>EDIT PLAN</p><h2 id="dialogTitle">編輯行程</h2></div><button type="button" class="close-button dialog-close" aria-label="關閉">×</button></div>
         <input type="hidden" id="editId" />
         <input type="hidden" id="editKind" />
         <label>時間<input id="editTime" placeholder="例如 15:30 或 午餐" /></label>
@@ -75,7 +85,7 @@
     </dialog>
 
     <dialog id="settingsDialog">
-      <div class="dialog-head"><div><p>DATA & PRIVACY</p><h2>資料與設定</h2></div><button class="close-button" id="closeSettings" aria-label="關閉">×</button></div>
+      <div class="dialog-head"><div><p>DATA & PRIVACY</p><h2>資料與設定</h2></div><button type="button" class="close-button dialog-close" aria-label="關閉">×</button></div>
       <div class="settings-list">
         <label class="toggle-row"><span><strong>顯示訂位資料</strong><small>預設隱藏姓名與預訂編號</small></span><input type="checkbox" id="privacyToggle" /></label>
         <button class="setting-action" id="exportButton"><span><strong>匯出行程</strong><small>下載 JSON 備份，也能傳給另一支手機</small></span><b>↓</b></button>
@@ -87,7 +97,7 @@
 
     <dialog id="loginDialog" class="login-dialog">
       <form method="dialog" id="loginForm">
-        <div class="dialog-head"><div><p>EDITOR ACCESS</p><h2>輸入編輯密碼</h2></div><button class="close-button" value="cancel" aria-label="關閉">×</button></div>
+        <div class="dialog-head"><div><p>EDITOR ACCESS</p><h2>輸入編輯密碼</h2></div><button type="button" class="close-button dialog-close" aria-label="關閉">×</button></div>
         <p class="login-copy">所有人都能瀏覽，只有知道共用密碼的人可以修改行程。</p>
         <label>共用密碼<input id="passwordInput" type="password" required autocomplete="current-password" placeholder="輸入旅行編輯密碼" /></label>
         <p class="login-error" id="loginError"></p>
