@@ -88,6 +88,8 @@ const collapsedCards=new Set();
 let mapMode="day";
 let routeMap;
 let routeLayer;
+let mapRenderToken=0;
+const roadRouteCache=new Map();
 
 const LOCATION_COORDS={
   "d1-2":[34.2142,134.0156],"d1-3":[34.2228,134.0168],"d1-4":[34.1174,133.6455],"d1-5":[33.5596,133.5311],"d1-6":[33.5681,133.5434],
@@ -145,17 +147,37 @@ function initRouteMap(){
   routeMap.setView([34.05,133.85],8);
 }
 
-function renderRouteMap(){
+async function roadGeometry(points){
+  const key=points.map(x=>x.coords.join(",")).join(";");
+  if(roadRouteCache.has(key))return roadRouteCache.get(key);
+  const coordinates=points.map(x=>`${x.coords[1]},${x.coords[0]}`).join(";");
+  try{
+    const response=await fetch(`https://router.project-osrm.org/route/v1/driving/${coordinates}?overview=full&geometries=geojson`);
+    if(!response.ok)throw new Error("route unavailable");
+    const data=await response.json();
+    const geometry=data.routes?.[0]?.geometry;
+    if(!geometry)throw new Error("route unavailable");
+    roadRouteCache.set(key,geometry);
+    return geometry;
+  }catch{return null;}
+}
+
+async function renderRouteMap(){
   initRouteMap();
   if(!routeMap)return;
+  const token=++mapRenderToken;
   routeLayer.clearLayers();
   const days=mapMode==="all"?state.days.map((_,i)=>i):[state.selectedDay];
   const bounds=[];
   let count=0;
-  days.forEach(dayIndex=>{
+  for(const dayIndex of days){
     const points=routePoints(dayIndex);
     const color=DAY_COLORS[dayIndex];
-    if(points.length>1)L.polyline(points.map(x=>x.coords),{color,weight:4,opacity:.72,dashArray:mapMode==="all"?"8 7":null}).addTo(routeLayer);
+    if(points.length>1){
+      const geometry=await roadGeometry(points);
+      if(token!==mapRenderToken)return;
+      if(geometry)L.geoJSON(geometry,{style:{color,weight:4,opacity:.78}}).addTo(routeLayer);
+    }
     points.forEach((point,routeIndex)=>{
       count++;
       bounds.push(point.coords);
@@ -164,7 +186,7 @@ function renderRouteMap(){
       const navigation=point.item.map?`<a href="${safe(point.item.map)}" target="_blank" rel="noopener">開啟導航 ↗</a>`:"";
       L.marker(point.coords,{icon}).bindPopup(`<div class="map-popup"><small>DAY ${dayIndex+1} · ${safe(point.item.time)}</small><strong>${safe(point.item.name)}</strong>${navigation}</div>`).addTo(routeLayer);
     });
-  });
+  }
   if(bounds.length)routeMap.fitBounds(bounds,{padding:[34,34],maxZoom:12});
   setTimeout(()=>routeMap.invalidateSize(),50);
   const day=state.days[state.selectedDay];
