@@ -47,10 +47,11 @@
       </section>
 
       <div class="filter-row" id="filterRow" aria-label="篩選行程">
-        <button class="filter-chip active" data-filter="all">全部</button>
-        <button class="filter-chip" data-filter="pending">待討論</button>
-        <button class="filter-chip" data-filter="confirmed">已確認</button>
-        <button class="filter-chip" data-filter="booked">已預約</button>
+        <span class="filter-label">顯示</span>
+        <button class="filter-chip active" data-filter="all"><i></i><span>全部</span><b id="countAll">0</b></button>
+        <button class="filter-chip" data-filter="pending"><i></i><span>待討論</span><b id="countPending">0</b></button>
+        <button class="filter-chip" data-filter="confirmed"><i></i><span>已確認</span><b id="countConfirmed">0</b></button>
+        <button class="filter-chip" data-filter="booked"><i></i><span>已預約</span><b id="countBooked">0</b></button>
       </div>
 
       <section class="progress-card" aria-label="今日確認進度">
