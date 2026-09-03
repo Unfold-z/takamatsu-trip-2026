@@ -86,6 +86,19 @@ let state={...clone(seed),...preferences};
 let isEditor=false;
 let currentFilter="all";
 const collapsedCards=new Set();
+let mapMode="day";
+let routeMap;
+let routeLayer;
+
+const LOCATION_COORDS={
+  "d1-2":[34.2142,134.0156],"d1-3":[34.2228,134.0168],"d1-4":[34.1174,133.6455],"d1-5":[33.5596,133.5311],"d1-6":[33.5681,133.5434],
+  "d2-1":[33.5681,133.5434],"d2-2":[33.5613,133.5315],"d2-3":[33.5007,133.2894],"d2-4":[33.5485,133.2162],"d2-5":[33.5712,133.1686],"d2-6":[33.5758,133.1037],"d2-7":[33.5858,133.1022],"d2-8":[33.5681,133.5434],
+  "d3-1":[33.5681,133.5434],"d3-2":[33.4982,133.5738],"d3-3":[33.4968,133.5727],"d3-4":[33.4974,133.5735],"d3-5":[33.8778,133.7550],"d3-6":[34.2490,133.9298],"d3-7":[34.3591,134.1058],"d3-8":[34.3332,134.0431],
+  "d4-1":[34.3332,134.0431],"d4-2":[34.1829,134.6080],"d4-3":[34.2366,134.6380],"d4-4":[34.2393,134.6370],"d4-5":[34.2172,134.6190],"d4-6":[34.2204,134.5838],"d4-7":[34.3332,134.0431],
+  "d5-1":[34.3294,134.0443],"d5-2":[34.3450,134.0500],"d5-3":[34.3332,134.0431],
+  "d6-1":[34.3332,134.0431],"d6-2":[34.2142,134.0156],"d6-3":[34.2142,134.0156]
+};
+const DAY_COLORS=["#e96743","#1d7f8c","#4b8164","#735f9b","#d39b38","#456b8a"];
 
 const $ = (id) => document.getElementById(id);
 const statusLabel = {pending:"待討論",confirmed:"已確認",booked:"已預約",backup:"備案"};
@@ -125,6 +138,55 @@ function render(){
   $("editorButton").textContent=isEditor?"✓ 編輯中":"🔒 編輯";
   $("editorButton").classList.toggle("active",isEditor);
   bindDynamic();
+  requestAnimationFrame(renderRouteMap);
+}
+
+function routePoints(dayIndex){
+  return state.days[dayIndex].items.map((item,index)=>({item,index,coords:LOCATION_COORDS[item.id]})).filter(x=>x.coords);
+}
+
+function initRouteMap(){
+  if(routeMap||!window.L)return;
+  routeMap=L.map("routeMap",{scrollWheelZoom:false,zoomControl:true});
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'}).addTo(routeMap);
+  routeLayer=L.layerGroup().addTo(routeMap);
+  routeMap.setView([34.05,133.85],8);
+}
+
+function renderRouteMap(){
+  initRouteMap();
+  if(!routeMap)return;
+  routeLayer.clearLayers();
+  const days=mapMode==="all"?state.days.map((_,i)=>i):[state.selectedDay];
+  const bounds=[];
+  let count=0;
+  days.forEach(dayIndex=>{
+    const points=routePoints(dayIndex);
+    const color=DAY_COLORS[dayIndex];
+    if(points.length>1)L.polyline(points.map(x=>x.coords),{color,weight:4,opacity:.72,dashArray:mapMode==="all"?"8 7":null}).addTo(routeLayer);
+    points.forEach((point,routeIndex)=>{
+      count++;
+      bounds.push(point.coords);
+      const label=mapMode==="all"?`${dayIndex+1}-${routeIndex+1}`:`${routeIndex+1}`;
+      const icon=L.divIcon({className:"route-marker-wrap",html:`<span class="route-marker" style="--marker-color:${color}">${label}</span>`,iconSize:[34,34],iconAnchor:[17,17]});
+      const navigation=point.item.map?`<a href="${safe(point.item.map)}" target="_blank" rel="noopener">開啟導航 ↗</a>`:"";
+      L.marker(point.coords,{icon}).bindPopup(`<div class="map-popup"><small>DAY ${dayIndex+1} · ${safe(point.item.time)}</small><strong>${safe(point.item.name)}</strong>${navigation}</div>`).addTo(routeLayer);
+    });
+  });
+  if(bounds.length)routeMap.fitBounds(bounds,{padding:[34,34],maxZoom:12});
+  setTimeout(()=>routeMap.invalidateSize(),50);
+  const day=state.days[state.selectedDay];
+  $("mapSummary").textContent=mapMode==="all"?`六天共 ${count} 個行程地標`:`DAY ${state.selectedDay+1} · ${day.title} · ${count} 個地標`;
+  document.querySelectorAll("[data-map-mode]").forEach(button=>button.classList.toggle("active",button.dataset.mapMode===mapMode));
+  const points=routePoints(state.selectedDay);
+  const routeButton=$("dayRouteButton");
+  if(mapMode==="day"&&points.length>1){
+    const names=points.map(x=>x.item.name);
+    const params=new URLSearchParams({api:"1",origin:names[0],destination:names[names.length-1],travelmode:"driving"});
+    if(names.length>2)params.set("waypoints",names.slice(1,-1).join("|"));
+    routeButton.href=`https://www.google.com/maps/dir/?${params}`;
+    routeButton.hidden=false;
+  }else routeButton.hidden=true;
 }
 
 function itemCard(x){
@@ -167,6 +229,7 @@ $("editorButton").onclick=()=>isEditor?logoutEditor():requireEditor(()=>{});
 $("prevDayButton").onclick=()=>{state.selectedDay=(state.selectedDay+state.days.length-1)%state.days.length;savePreferences();render();};
 $("nextDayButton").onclick=()=>{state.selectedDay=(state.selectedDay+1)%state.days.length;savePreferences();render();};
 document.querySelectorAll("[data-filter]").forEach(button=>button.onclick=()=>{currentFilter=button.dataset.filter;document.querySelectorAll("[data-filter]").forEach(x=>x.classList.toggle("active",x===button));render();});
+document.querySelectorAll("[data-map-mode]").forEach(button=>button.onclick=()=>{mapMode=button.dataset.mapMode;renderRouteMap();});
 document.querySelectorAll(".dialog-close").forEach(button=>button.onclick=()=>button.closest("dialog").close());
 $("loginForm").onsubmit=async(e)=>{e.preventDefault();$("loginSubmit").disabled=true;$("loginError").textContent="";try{await loginEditor($("passwordInput").value);$("loginDialog").close();toast("已進入編輯模式");}catch{$("loginError").textContent="密碼不正確，請再試一次。";}finally{$("loginSubmit").disabled=false;}};
 
