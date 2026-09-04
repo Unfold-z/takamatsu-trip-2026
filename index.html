@@ -36,6 +36,16 @@
         <div class="route-art" aria-hidden="true"><span class="route-dot dot-a"></span><span class="route-dot dot-b"></span><span class="route-dot dot-c"></span><strong>TAKAMATSU</strong><i></i><strong>KOCHI</strong><i></i><strong>NARUTO</strong></div>
       </section>
 
+      <a class="map-feature-link" href="map.html">
+        <span class="map-feature-icon" aria-hidden="true">⌖</span>
+        <span><small>TRIP ROUTE</small><strong>開啟全螢幕路線圖</strong><em>查看六天道路路線與每天停靠地點</em></span>
+        <b aria-hidden="true">→</b>
+      </a>
+
+      <nav class="view-tabs" aria-label="行程與候選名單">
+        <a href="#itinerary" data-view="itinerary" aria-current="page">每日行程</a>
+        <a href="#choices" data-view="choices">候選名單</a>
+      </nav>
       <nav class="day-tabs" id="dayTabs" aria-label="選擇日期"></nav>
 
       <section class="day-heading" id="dayHeading">
@@ -65,8 +75,8 @@
 
       <section class="timeline" id="timeline" aria-live="polite"></section>
 
-      <section class="choices-section" id="choicesSection">
-        <div class="section-title"><div><p>POCKET LIST</p><h2>候選口袋</h2></div><button class="text-button" id="addChoiceButton">＋ 加入候選</button></div>
+      <section class="choices-section" id="choicesSection" hidden>
+        <div class="section-title"><div><p>POCKET LIST</p><h2>候選名單</h2></div><button class="text-button" id="addChoiceButton">＋ 加入候選</button></div>
         <div class="choice-grid" id="choiceGrid"></div>
       </section>
     </main>
