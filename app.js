@@ -85,6 +85,12 @@ try { preferences={...preferences,...JSON.parse(localStorage.getItem(STORAGE_KEY
 let state={...clone(seed),...preferences};
 let isEditor=false;
 const collapsedCards=new Set();
+const expandedNotes=new Set();
+function noteBlock(x){
+  if(!x.note)return "";
+  const expanded=expandedNotes.has(x.id);
+  return `<div class="note-block"><p class="note ${expanded?"":"note-preview"}" id="note-${safe(x.id)}">${readableNote(x.note)}</p><button type="button" class="note-toggle" data-note="${safe(x.id)}" aria-expanded="${expanded}" aria-controls="note-${safe(x.id)}">${expanded?"收合備註 ↑":"展開備註 ↓"}</button></div>`;
+}
 let mapMode="day";
 let routeMap;
 let routeLayer;
@@ -219,7 +225,7 @@ async function renderRouteMap(){
 }
 
 function itemCard(x){
-  const note=x.note?`<p class="note">${readableNote(x.note)}</p>`:"";
+  const note=noteBlock(x);
   const privacy=x.private&&state.showPrivate?`<p class="private-note">🔒 ${safe(x.private)}</p>`:"";
   const travel=x.travel?`<p class="travel-line">→ ${safe(x.travel)}</p>`:"";
   const map=x.map?`<a class="map-button" href="${safe(x.map)}" target="_blank" rel="noopener">↗ 開啟導航</a>`:"";
@@ -227,13 +233,20 @@ function itemCard(x){
   return `<article class="timeline-item"><time class="timeline-time">${safe(x.time)}</time><span class="timeline-dot"></span><div class="timeline-card ${collapsedCards.has(x.id)?"collapsed":""}" data-card="${x.id}"><div class="card-top"><div><div class="type-line"><span class="type-badge">${safe(x.type)}</span>${booked}</div><h3>${safe(x.name)}</h3></div><button class="card-menu edit-item" data-id="${x.id}" aria-label="編輯 ${safe(x.name)}">•••</button></div>${travel}${note}${privacy}<div class="card-actions">${map}</div></div></article>`;
 }
 
-function choiceCard(x){ return `<article class="choice-card"><span class="type-badge">${safe(x.type)}</span><h3>${safe(x.name)}</h3><p>${readableNote(x.note||"")}</p><div class="choice-actions">${x.map?`<a class="map-button" href="${safe(x.map)}" target="_blank" rel="noopener">↗ 地圖</a>`:""}<button class="confirm-button edit-choice" data-id="${x.id}">編輯</button></div></article>`; }
+function choiceCard(x){ return `<article class="choice-card"><span class="type-badge">${safe(x.type)}</span><h3>${safe(x.name)}</h3>${noteBlock(x)}<div class="choice-actions">${x.map?`<a class="map-button" href="${safe(x.map)}" target="_blank" rel="noopener">↗ 地圖</a>`:""}<button class="confirm-button edit-choice" data-id="${x.id}">編輯</button></div></article>`; }
 
 function bindDynamic(){
   document.querySelectorAll("[data-day]").forEach(b=>b.onclick=()=>{state.selectedDay=Number(b.dataset.day);savePreferences();render();window.scrollTo({top:300,behavior:"smooth"});});
   document.querySelectorAll(".edit-item").forEach(b=>b.onclick=()=>requireEditor(()=>openEditor("item",b.dataset.id)));
   document.querySelectorAll(".edit-choice").forEach(b=>b.onclick=()=>requireEditor(()=>openEditor("choice",b.dataset.id)));
-  document.querySelectorAll("[data-card]").forEach(card=>card.onclick=e=>{if(e.target.closest("button,a"))return;const id=card.dataset.card;collapsedCards.has(id)?collapsedCards.delete(id):collapsedCards.add(id);card.classList.toggle("collapsed");});
+  document.querySelectorAll("[data-note]").forEach(button=>button.onclick=()=>{
+    const id=button.dataset.note;
+    const expanded=!expandedNotes.has(id);
+    if(expanded)expandedNotes.add(id);else expandedNotes.delete(id);
+    button.previousElementSibling.classList.toggle("note-preview",!expanded);
+    button.setAttribute("aria-expanded",String(expanded));
+    button.textContent=expanded?"收合備註 ↑":"展開備註 ↓";
+  });
 }
 
 const currentDay=()=>state.days[state.selectedDay];
