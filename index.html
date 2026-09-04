@@ -45,6 +45,7 @@
       <nav class="view-tabs" aria-label="行程與候選名單">
         <a href="#itinerary" data-view="itinerary" aria-current="page">每日行程</a>
         <a href="#choices" data-view="choices">候選名單</a>
+        <a href="map.html">路線地圖</a>
       </nav>
       <nav class="day-tabs" id="dayTabs" aria-label="選擇日期"></nav>
 
@@ -58,7 +59,8 @@
         </div>
       </section>
 
-      <section class="route-map-section" aria-labelledby="routeMapTitle">
+      <section id="nextStop" class="next-stop" aria-live="polite"></section>
+      <section class="route-map-section" aria-labelledby="routeMapTitle" hidden>
         <div class="map-heading">
           <div><p>ROUTE MAP</p><h2 id="routeMapTitle">行程路線圖</h2><span id="mapSummary">依行程順序顯示</span></div>
           <div class="map-actions">
@@ -81,6 +83,7 @@
       </section>
     </main>
 
+    <nav class="bottom-nav" aria-label="主要導覽"><a href="#itinerary" data-view="itinerary">行程</a><a href="map.html">地圖</a><a href="#choices" data-view="choices">候選</a></nav>
     <footer><span>高松 · 高知 · 鳴門</span><p>行程透過 Firebase 即時同步；公開瀏覽，密碼解鎖編輯。</p></footer>
 
     <dialog id="editDialog">
