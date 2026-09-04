@@ -119,6 +119,21 @@ function requireEditor(action){
 }
 function toast(message){ clearTimeout(toastTimer); $("toast").textContent=message; $("toast").classList.add("show"); toastTimer=setTimeout(()=>$("toast").classList.remove("show"),1800); }
 function safe(text=""){ const d=document.createElement("div"); d.textContent=text; return d.innerHTML; }
+function readableNote(text=""){
+  return safe(text.includes("\n")?text:text.replace(/([。；])\s*/g,"$1\n").trim());
+}
+function renderView(){
+  const choices=location.hash==="#choices";
+  $("choicesSection").hidden=!choices;
+  $("timeline").hidden=choices;
+  document.querySelector(".route-map-section").hidden=choices;
+  $("addButton").hidden=choices;
+  document.querySelectorAll("[data-view]").forEach(link=>{
+    const active=link.dataset.view===(choices?"choices":"itinerary");
+    if(active)link.setAttribute("aria-current","page");else link.removeAttribute("aria-current");
+  });
+  if(!choices)requestAnimationFrame(renderRouteMap);
+}
 
 function render(){
   const day=state.days[state.selectedDay];
@@ -132,7 +147,7 @@ function render(){
   $("editorButton").textContent=isEditor?"✓ 編輯中":"🔒 編輯";
   $("editorButton").classList.toggle("active",isEditor);
   bindDynamic();
-  requestAnimationFrame(renderRouteMap);
+  renderView();
 }
 
 function routePoints(dayIndex){
@@ -204,7 +219,7 @@ async function renderRouteMap(){
 }
 
 function itemCard(x){
-  const note=x.note?`<p class="note">${safe(x.note)}</p>`:"";
+  const note=x.note?`<p class="note">${readableNote(x.note)}</p>`:"";
   const privacy=x.private&&state.showPrivate?`<p class="private-note">🔒 ${safe(x.private)}</p>`:"";
   const travel=x.travel?`<p class="travel-line">→ ${safe(x.travel)}</p>`:"";
   const map=x.map?`<a class="map-button" href="${safe(x.map)}" target="_blank" rel="noopener">↗ 開啟導航</a>`:"";
@@ -212,7 +227,7 @@ function itemCard(x){
   return `<article class="timeline-item"><time class="timeline-time">${safe(x.time)}</time><span class="timeline-dot"></span><div class="timeline-card ${collapsedCards.has(x.id)?"collapsed":""}" data-card="${x.id}"><div class="card-top"><div><div class="type-line"><span class="type-badge">${safe(x.type)}</span>${booked}</div><h3>${safe(x.name)}</h3></div><button class="card-menu edit-item" data-id="${x.id}" aria-label="編輯 ${safe(x.name)}">•••</button></div>${travel}${note}${privacy}<div class="card-actions">${map}</div></div></article>`;
 }
 
-function choiceCard(x){ return `<article class="choice-card"><span class="type-badge">${safe(x.type)}</span><h3>${safe(x.name)}</h3><p>${safe(x.note||"")}</p><div class="choice-actions">${x.map?`<a class="map-button" href="${safe(x.map)}" target="_blank" rel="noopener">↗ 地圖</a>`:""}<button class="confirm-button edit-choice" data-id="${x.id}">編輯</button></div></article>`; }
+function choiceCard(x){ return `<article class="choice-card"><span class="type-badge">${safe(x.type)}</span><h3>${safe(x.name)}</h3><p>${readableNote(x.note||"")}</p><div class="choice-actions">${x.map?`<a class="map-button" href="${safe(x.map)}" target="_blank" rel="noopener">↗ 地圖</a>`:""}<button class="confirm-button edit-choice" data-id="${x.id}">編輯</button></div></article>`; }
 
 function bindDynamic(){
   document.querySelectorAll("[data-day]").forEach(b=>b.onclick=()=>{state.selectedDay=Number(b.dataset.day);savePreferences();render();window.scrollTo({top:300,behavior:"smooth"});});
@@ -245,6 +260,7 @@ document.querySelectorAll("[data-map-mode]").forEach(button=>button.onclick=()=>
 document.querySelectorAll(".dialog-close").forEach(button=>button.onclick=()=>button.closest("dialog").close());
 $("loginForm").onsubmit=async(e)=>{e.preventDefault();$("loginSubmit").disabled=true;$("loginError").textContent="";try{await loginEditor($("passwordInput").value);$("loginDialog").close();toast("已進入編輯模式");}catch{$("loginError").textContent="密碼不正確，請再試一次。";}finally{$("loginSubmit").disabled=false;}};
 
+window.addEventListener("hashchange",renderView);
 watchEditor(active=>{isEditor=active;render();});
 watchTrip(data=>{if(data?.days?.length){state={...state,days:data.days};render();}},()=>toast("目前使用離線行程"));
 
