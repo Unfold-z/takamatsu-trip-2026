@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#173942"><title>購物・代購記帳｜高松六日行程</title>
+<link rel="stylesheet" href="styles.css"><link rel="stylesheet" href="shopping.css">
+</head>
+<body class="shopping-page">
+<header class="site-header"><a class="brand" href="index.html#itinerary"><strong>← 每日行程</strong></a><button id="lockButton" class="editor-button" hidden>鎖定購物資料</button></header>
+<main>
+  <div class="shop-heading"><div><p class="eyebrow">SHOPPING</p><h1>購物・代購記帳</h1></div><button id="addShopping" class="primary-button" disabled hidden>＋ 新增</button></div>
+  <section id="shoppingGate" class="shop-gate"><h2>先解鎖，再查看購物資料</h2><p>使用原本的共用編輯密碼。姓名與金額不會放進公開行程。</p><form id="shoppingLogin"><label>共用密碼<input id="shopPassword" type="password" required autocomplete="current-password"></label><button class="primary-button" type="submit">解鎖購物清單</button></form></section>
+  <p id="shopMessage" role="status" aria-live="polite">正在確認登入狀態…</p>
+  <section id="shoppingWorkspace" hidden>
+    <nav class="view-tabs" aria-label="購物頁籤"><button data-shop-tab="list" aria-pressed="true">代購／購物清單</button><button data-shop-tab="ledger" aria-pressed="false">購物記帳</button></nav>
+    <div id="listPanel">
+      <div class="shop-filters"><label>狀態<select id="statusFilter"><option value="pending">待買</option><option value="all">全部</option><option value="bought">已買</option><option value="missing">缺貨</option><option value="cancelled">取消</option></select></label><label>商店<select id="storeFilter"><option value="all">全部商店</option></select></label><label>對象<select id="personFilter"><option value="all">全部對象</option></select></label></div>
+      <div id="shoppingCards" class="shopping-cards"></div>
+    </div>
+    <div id="ledgerPanel" hidden><div id="shoppingTotals" class="shopping-totals"></div><p class="ledger-note">只計入「已買」商品。台幣金額＝日圓實付總額 × 自填匯率，逐筆四捨五入；不含手續費。未填匯率不列入台幣合計。</p><div id="shoppingLedger"></div></div>
+  </section>
+</main>
+<dialog id="shoppingDialog"><form id="shoppingForm">
+  <div class="dialog-head"><h2 id="shoppingDialogTitle">新增購物</h2><button type="button" id="closeShopping" class="close-button" aria-label="關閉">×</button></div>
+  <label>商品名稱<input id="shopName" required maxlength="150"></label>
+  <div class="shop-fields"><label>用途<select id="shopKind"><option value="proxy">幫人代購</option><option value="self">自己買</option></select></label><label>幫誰買<input id="shopPerson" maxlength="80" placeholder="姓名或暱稱"></label></div>
+  <label>規格<input id="shopSpec" maxlength="300" placeholder="色號、尺寸、容量、口味"></label>
+  <div class="shop-fields"><label>預計數量<input id="shopQuantity" type="number" min="1" max="9999" step="1" required value="1"></label><label>總預算（日圓）<input id="shopBudget" type="number" min="0" max="100000000" step="1" placeholder="可不填"></label></div>
+  <label>預計購買商店<input id="shopStore" maxlength="100" placeholder="例如：松本清、高松三越"></label>
+  <label>商品參考連結<input id="shopLink" type="url" maxlength="2000" placeholder="https://…"></label>
+  <label>狀態<select id="shopStatus"><option value="pending">待買</option><option value="bought">已買</option><option value="missing">缺貨</option><option value="cancelled">取消</option></select></label>
+  <fieldset id="purchaseFields" hidden><legend>實際購買與記帳</legend><div class="shop-fields"><label>實買數量<input id="shopActualQuantity" type="number" min="1" max="9999" step="1"></label><label>實付總額（日圓）<input id="shopActual" type="number" min="0" max="100000000" step="1"></label></div><div class="shop-fields"><label>購買日期<input id="shopDate" type="date"></label><label>匯率（1 日圓＝台幣）<input id="shopRate" type="number" min="0.000001" max="100" step="any" placeholder="自行填寫，可留空"></label></div><label id="paidLabel">收款狀態<select id="shopPaid"><option value="no">尚未收款</option><option value="yes">已收款</option></select></label></fieldset>
+  <label>備註<textarea id="shopNote" rows="3" maxlength="4000"></textarea></label>
+  <p id="shoppingFormError" role="alert"></p><div class="shop-form-actions"><button id="removeShopping" class="danger-button" type="button" hidden>刪除</button><button id="cancelShopping" type="button" class="secondary-button">取消</button><button id="saveShoppingButton" class="primary-button" type="submit">儲存並同步</button></div>
+</form></dialog>
+<nav class="bottom-nav" aria-label="主要導覽"><a href="index.html#itinerary">行程</a><a href="map.html">地圖</a><a href="index.html#choices">候選</a><a href="shopping.html" aria-current="page">購物</a></nav>
+<script type="module" src="shopping.js"></script>
+</body></html>

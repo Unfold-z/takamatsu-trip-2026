@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
 import { getAuth, setPersistence, browserLocalPersistence, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
-import { getFirestore, doc, onSnapshot, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
+import { getFirestore, doc, collection, onSnapshot, setDoc, serverTimestamp, runTransaction } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
 
 const app = initializeApp({
   apiKey:"AIzaSyD0g2B4CGcfeDByfsZhTijDLM5sMN0nILs",
@@ -19,3 +19,21 @@ export const watchTrip=(onData,onError)=>onSnapshot(tripRef,snap=>onData(snap.ex
 export const loginEditor=(password)=>signInWithEmailAndPassword(auth,EDITOR_ACCOUNT,password);
 export const logoutEditor=()=>signOut(auth);
 export const saveTrip=(days)=>setDoc(tripRef,{days,updatedAt:serverTimestamp()},{merge:true});
+
+const shoppingRef=collection(db,"privateShopping");
+export const watchShopping=(onData,onError)=>onSnapshot(shoppingRef,snap=>onData(snap.docs.map(d=>({...d.data(),id:d.id}))),onError);
+export async function saveShopping(id,value,revision=0){
+  const ref=id?doc(shoppingRef,id):doc(shoppingRef);
+  await runTransaction(db,async tx=>{
+    const snap=await tx.get(ref);
+    if(id&&(!snap.exists()||(snap.data().revision||0)!==revision))throw new Error("conflict");
+    tx.set(ref,{...value,revision:revision+1,updatedAt:serverTimestamp()});
+  });
+}
+export async function deleteShopping(id,revision){
+  await runTransaction(db,async tx=>{
+    const ref=doc(shoppingRef,id),snap=await tx.get(ref);
+    if(!snap.exists()||(snap.data().revision||0)!==revision)throw new Error("conflict");
+    tx.delete(ref);
+  });
+}
