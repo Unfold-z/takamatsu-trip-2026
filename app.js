@@ -83,6 +83,9 @@ const clone = (x) => JSON.parse(JSON.stringify(x));
 let preferences={selectedDay:0,showPrivate:false};
 try { preferences={...preferences,...JSON.parse(localStorage.getItem(STORAGE_KEY))}; } catch {}
 let state={...clone(seed),...preferences};
+function japanDate(){return new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Tokyo",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());}
+const arrivalDay=state.days.findIndex(d=>d.date===japanDate());
+state.selectedDay=arrivalDay>=0?arrivalDay:Math.max(0,Math.min(5,Number(state.selectedDay)||0));
 let isEditor=false;
 const collapsedCards=new Set();
 const expandedNotes=new Set();
@@ -132,13 +135,21 @@ function renderView(){
   const choices=location.hash==="#choices";
   $("choicesSection").hidden=!choices;
   $("timeline").hidden=choices;
-  document.querySelector(".route-map-section").hidden=choices;
+  document.querySelector(".route-map-section").hidden=true;
+  $("nextStop").hidden=choices;
   $("addButton").hidden=choices;
   document.querySelectorAll("[data-view]").forEach(link=>{
     const active=link.dataset.view===(choices?"choices":"itinerary");
     if(active)link.setAttribute("aria-current","page");else link.removeAttribute("aria-current");
   });
-  if(!choices)requestAnimationFrame(renderRouteMap);
+}
+
+function renderNextStop(day){
+  const today=japanDate();
+  const clock=new Intl.DateTimeFormat("en-GB",{timeZone:"Asia/Tokyo",hour:"2-digit",minute:"2-digit",hourCycle:"h23"}).format(new Date());
+  const timed=day.items.filter(x=>/^\d{1,2}:\d{2}/.test(x.time||""));
+  const next=day.date===today?timed.find(x=>x.time.match(/^\d{1,2}:\d{2}/)[0].padStart(5,"0")>=clock):null;
+  $("nextStop").innerHTML=next?`<small>下一個定時行程 · 日本時間</small><strong>${safe(next.time)}　${safe(next.name)}</strong>`:`<small>${day.date===today?"今天行程請依下方順序查看":day.date>today?"行程預覽":"行程回顧"}</small>`;
 }
 
 function render(){
@@ -146,6 +157,7 @@ function render(){
   $("dayTabs").innerHTML=state.days.map((d,i)=>`<button class="day-tab ${i===state.selectedDay?"active":""}" data-day="${i}"><span>DAY ${i+1}</span><strong>${d.date.slice(5).replace("-","/")} ${d.weekday}</strong></button>`).join("");
   $("dayMeta").textContent=`DAY ${state.selectedDay+1} · ${day.date.replaceAll("-",".")} · ${day.weekday}`;
   $("dayTitle").textContent=day.title;
+  renderNextStop(day);
   const visibleItems=day.items;
   $("timeline").innerHTML=visibleItems.length?visibleItems.map(itemCard).join(""):`<div class="empty">這個篩選條件下沒有行程。</div>`;
   $("choiceGrid").innerHTML=day.choices.length?day.choices.map(choiceCard).join(""):`<div class="empty">尚無候選地點</div>`;
@@ -226,8 +238,10 @@ async function renderRouteMap(){
 
 function itemCard(x){
   const note=noteBlock(x);
+  const important=(x.note||"").split(/[。；\n]/).filter(s=>/提前|提早|至少|訂位|預約/.test(s)).join("；");
+  const reminder=important?`<p class="important-reminder">提醒：${safe(important)}</p>`:"";
   const privacy=x.private&&state.showPrivate?`<p class="private-note">🔒 ${safe(x.private)}</p>`:"";
-  const travel=x.travel?`<p class="travel-line">→ ${safe(x.travel)}</p>`:"";
+  const travel=(x.travel?`<p class="travel-line">→ ${safe(x.travel)}</p>`:"")+reminder;
   const map=x.map?`<a class="map-button" href="${safe(x.map)}" target="_blank" rel="noopener">↗ 開啟導航</a>`:"";
   const booked=x.status==="booked"?`<span class="status-badge booked">已預約</span>`:"";
   return `<article class="timeline-item"><time class="timeline-time">${safe(x.time)}</time><span class="timeline-dot"></span><div class="timeline-card ${collapsedCards.has(x.id)?"collapsed":""}" data-card="${x.id}"><div class="card-top"><div><div class="type-line"><span class="type-badge">${safe(x.type)}</span>${booked}</div><h3>${safe(x.name)}</h3></div><button class="card-menu edit-item" data-id="${x.id}" aria-label="編輯 ${safe(x.name)}">•••</button></div>${travel}${note}${privacy}<div class="card-actions">${map}</div></div></article>`;
@@ -262,7 +276,7 @@ $("deleteButton").onclick=()=>{const kind=$("editKind").value,id=$("editId").val
 $("addButton").onclick=()=>requireEditor(()=>openEditor("item")); $("addChoiceButton").onclick=()=>requireEditor(()=>openEditor("choice"));
 $("settingsButton").onclick=()=>$("settingsDialog").showModal();
 $("privacyToggle").onchange=(e)=>{state.showPrivate=e.target.checked;savePreferences();render();};
-$("todayButton").onclick=()=>{const local=new Date().toLocaleDateString("en-CA");const found=state.days.findIndex(d=>d.date===local);state.selectedDay=found>=0?found:0;savePreferences();render();toast(found>=0?"已切換到今天":"旅程尚未開始，先顯示 Day 1");};
+$("todayButton").onclick=()=>{const local=japanDate();const found=state.days.findIndex(d=>d.date===local);state.selectedDay=found>=0?found:0;savePreferences();render();toast(found>=0?"已切換到今天（日本時間）":"今天不在旅程日期內，先顯示 Day 1");};
 $("exportButton").onclick=()=>{const blob=new Blob([JSON.stringify(state,null,2)],{type:"application/json"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=`setouchi-trip-${new Date().toISOString().slice(0,10)}.json`;a.click();URL.revokeObjectURL(a.href);toast("備份已下載");};
 $("importInput").onchange=async(e)=>{if(!isEditor){e.target.value="";$("settingsDialog").close();requireEditor(()=>{});return;}try{const data=JSON.parse(await e.target.files[0].text());if(!Array.isArray(data.days)||data.days.length!==6)throw new Error();state={...state,days:data.days};await save("行程已匯入");$("settingsDialog").close();render();}catch{toast("檔案格式不正確");}e.target.value="";};
 $("resetButton").onclick=()=>requireEditor(()=>{if(confirm("確定要清除所有人的修改，還原最初行程嗎？")){state={...state,days:clone(seed.days)};save("已還原原始行程");$("settingsDialog").close();render();}});
