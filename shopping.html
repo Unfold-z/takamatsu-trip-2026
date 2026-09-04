@@ -30,6 +30,13 @@
   <label>商品參考連結<input id="shopLink" type="url" maxlength="2000" placeholder="https://…"></label>
   <label>狀態<select id="shopStatus"><option value="pending">待買</option><option value="bought">已買</option><option value="missing">缺貨</option><option value="cancelled">取消</option></select></label>
   <fieldset id="purchaseFields" hidden><legend>實際購買與記帳</legend><div class="shop-fields"><label>實買數量<input id="shopActualQuantity" type="number" min="1" max="9999" step="1"></label><label>實付總額（日圓）<input id="shopActual" type="number" min="0" max="100000000" step="1"></label></div><div class="shop-fields"><label>購買日期<input id="shopDate" type="date"></label><label>匯率（1 日圓＝台幣）<input id="shopRate" type="number" min="0.000001" max="100" step="any" placeholder="自行填寫，可留空"></label></div><label id="paidLabel">收款狀態<select id="shopPaid"><option value="no">尚未收款</option><option value="yes">已收款</option></select></label></fieldset>
+  <fieldset id="splitFields" hidden><legend>兩人分帳（日圓）</legend>
+    <p class="ledger-note">「我」固定代表男友，「女友」固定代表女友，兩支手機相同。代購款不列入兩人分帳。</p>
+    <div class="shop-fields"><label>誰先付款<select id="shopPayer"><option value="">尚未指定</option><option value="me">我（男友）</option><option value="partner">女友</option></select></label><label>分攤方式<select id="shopSplit"><option value="none">不分帳</option><option value="half">各半</option><option value="me">我負擔全部</option><option value="partner">女友負擔全部</option><option value="custom">自訂金額</option></select></label></div>
+    <label id="customShareLabel" hidden>我應負擔（日圓；餘額由女友負擔）<input id="shopMyShare" type="number" min="0" max="100000000" step="1"></label>
+    <label>這筆分帳<select id="shopSettled"><option value="no">未結清</option><option value="yes">已結清</option></select></label>
+    <p class="ledger-note">各半遇到奇數日圓時，多出 1 圓由付款人負擔。結清只記錄狀態，不會實際轉帳；修改金額或分攤後會恢復未結清。</p>
+  </fieldset>
   <label>備註<textarea id="shopNote" rows="3" maxlength="4000"></textarea></label>
   <p id="shoppingFormError" role="alert"></p><div class="shop-form-actions"><button id="removeShopping" class="danger-button" type="button" hidden>刪除</button><button id="cancelShopping" type="button" class="secondary-button">取消</button><button id="saveShoppingButton" class="primary-button" type="submit">儲存並同步</button></div>
 </form></dialog>
